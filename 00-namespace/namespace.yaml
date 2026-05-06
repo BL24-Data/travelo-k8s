@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: travelo
+  labels:
+    app: travelo
+    environment: dev
+    managed-by: kubectl
