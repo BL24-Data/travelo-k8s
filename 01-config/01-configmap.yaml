@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: travelo-config
+  namespace: travelo
+  labels:
+    app: travelo
+data:
+  # Variables pour MySQL
+  MYSQL_DATABASE: travelo_db
+  
+  # Variables pour Spring Backend
+  # Note: 'mysql-service' est le nom du Service K8s qu'on créera plus tard
+  # Le DNS interne du cluster résout automatiquement ce nom vers les pods MySQL
+  SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-service:3306/travelo_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+  
+  # Profil Spring (utile si l'app a plusieurs profils)
+  SPRING_PROFILES_ACTIVE: "production"
