@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: travelo-quota
+  namespace: travelo
+  labels:
+    app: travelo
+spec:
+  hard:
+    # ─────────────────────────────────────────────────────────────
+    # Limites sur le NOMBRE d'objets
+    # ─────────────────────────────────────────────────────────────
+    pods: "10"                              # Max 10 pods (5 actuels + marge scaling)
+    persistentvolumeclaims: "3"             # Max 3 PVC (1 actuel + marge)
+    services: "5"                           # Max 5 Services
+    configmaps: "10"                        # Max 10 ConfigMaps
+    secrets: "10"                           # Max 10 Secrets
+    
+    # ─────────────────────────────────────────────────────────────
+    # Limites sur les RESSOURCES (CPU + Mémoire)
+    # ─────────────────────────────────────────────────────────────
+    
+    # Total des "requests" cumulés du namespace (capacité réservée)
+    requests.cpu: "2"                       # Max 2 CPU réservés
+    requests.memory: "4Gi"                  # Max 4 Gi RAM réservés
+    
+    # Total des "limits" cumulés (capacité maximale)
+    limits.cpu: "6"                         # Max 6 CPU consommables
+    limits.memory: "8Gi"                    # Max 8 Gi RAM consommables
+    
+    # Limite sur le stockage persistant
+    requests.storage: "10Gi"                # Max 10 Gi de PVC

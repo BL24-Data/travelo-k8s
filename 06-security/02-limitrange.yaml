@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: travelo-limits
+  namespace: travelo
+  labels:
+    app: travelo
+spec:
+  limits:
+    # Defaults pour les containers qui ne spécifient rien
+    - type: Container
+      
+      # Si aucune "requests" n'est définie sur un pod, K8s applique:
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+      
+      # Si aucune "limits" n'est définie sur un pod, K8s applique:
+      default:
+        cpu: "500m"
+        memory: "512Mi"
+      
+      # Valeurs MIN autorisées (refuse le pod si moins)
+      min:
+        cpu: "10m"
+        memory: "32Mi"
+      
+      # Valeurs MAX autorisées (refuse le pod si plus)
+      max:
+        cpu: "2000m"
+        memory: "2Gi"
+      
+      # Ratio max entre limits et requests (anti burst excessif)
+      maxLimitRequestRatio:
+        cpu: "10"        # limits.cpu max = 10 × requests.cpu
+        memory: "4"      # limits.memory max = 4 × requests.memory
