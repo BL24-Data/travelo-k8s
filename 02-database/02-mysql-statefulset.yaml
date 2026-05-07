@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: travelo
+  labels:
+    app: travelo
+    component: database
+spec:
+  # Lien obligatoire avec le Headless Service
+  serviceName: mysql-service
+  replicas: 1
+  
+  selector:
+    matchLabels:
+      app: travelo
+      component: database
+  
+  template:
+    metadata:
+      labels:
+        app: travelo
+        component: database
+    spec:
+      # Délai avant force-kill (laisse MySQL flusher ses données)
+      terminationGracePeriodSeconds: 30
+      
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          imagePullPolicy: IfNotPresent
+          
+          ports:
+            - name: mysql
+              containerPort: 3306
+              protocol: TCP
+          
+          # Variables d'env injectées depuis Secret + ConfigMap
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: travelo-secret
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: travelo-config
+                  key: MYSQL_DATABASE
+          
+          # Montage du volume persistant
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+          
+          # Limites de ressources (exigé par le sujet)
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          
+          # Sonde de démarrage (pour apps lentes à booter)
+          startupProbe:
+            exec:
+              command:
+                - bash
+                - -c
+                - "mysqladmin ping -h localhost -uroot -p$MYSQL_ROOT_PASSWORD"
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          
+          # Sonde de vivacité (tue le pod si bloqué)
+          livenessProbe:
+            exec:
+              command:
+                - bash
+                - -c
+                - "mysqladmin ping -h localhost -uroot -p$MYSQL_ROOT_PASSWORD"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          # Sonde de readiness (retire du Service si pas prêt)
+          readinessProbe:
+            exec:
+              command:
+                - bash
+                - -c
+                - "mysql -h 127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD -e 'SELECT 1'"
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+  
+  # Template de PVC: K8s crée un PVC dédié par pod
+  # Pour 1 réplica → crée le PVC mysql-data-mysql-0
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-data
+        labels:
+          app: travelo
+          component: database
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 2Gi
