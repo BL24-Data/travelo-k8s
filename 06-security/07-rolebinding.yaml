@@ -1,0 +1,20 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: travelo-readonly-binding
+  namespace: travelo
+  labels:
+    app: travelo
+    purpose: rbac-demo
+
+# "subjects" = QUI reçoit les permissions
+subjects:
+  - kind: ServiceAccount
+    name: travelo-readonly                      # Le SA qu'on a créé
+    namespace: travelo
+
+# "roleRef" = QUELLES permissions sont attribuées
+roleRef:
+  kind: Role                                    # On lie un Role (pas un ClusterRole)
+  name: travelo-readonly-role                   # Le Role qu'on a créé
+  apiGroup: rbac.authorization.k8s.io

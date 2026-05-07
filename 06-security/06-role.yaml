@@ -1,0 +1,49 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: travelo-readonly-role
+  namespace: travelo
+  labels:
+    app: travelo
+    purpose: rbac-demo
+rules:
+  # Règle 1: Lecture seule sur les pods, services, endpoints
+  # Permet de monitorer l'état de l'application
+  - apiGroups: [""]                  # "" = core API (pods, services, configmaps)
+    resources:
+      - pods
+      - pods/log                     # Permet de voir les logs (pratique!)
+      - pods/status                  # Permet de voir l'état des pods
+      - services
+      - endpoints
+      - configmaps                   # Lecture des ConfigMaps autorisée
+    verbs:
+      - get                          # kubectl describe pod
+      - list                         # kubectl get pods
+      - watch                        # kubectl get pods -w
+  
+  # Règle 2: Lecture seule sur les workloads (Deployments, StatefulSets)
+  # Permet de voir les configurations de déploiement
+  - apiGroups: ["apps"]              # Groupe "apps" pour les workloads
+    resources:
+      - deployments
+      - statefulsets
+      - replicasets
+    verbs:
+      - get
+      - list
+      - watch
+  
+  # Règle 3: Lecture des événements (debug)
+  # Très utile pour comprendre ce qui se passe sans pouvoir modifier
+  - apiGroups: [""]
+    resources:
+      - events
+    verbs:
+      - get
+      - list
+      - watch
+  
+  # ⚠️ NOTE IMPORTANTE: PAS d'accès aux Secrets!
+  # Les Secrets contiennent des credentials sensibles (mot de passe MySQL),
+  # un compte read-only ne doit JAMAIS pouvoir les lire.
