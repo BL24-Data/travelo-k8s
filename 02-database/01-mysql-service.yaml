@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+  namespace: travelo
+  labels:
+    app: travelo
+    component: database
+spec:
+  # clusterIP: None = Headless Service
+  # → Pas d'IP virtuelle, pas de load balancing
+  # → DNS individuel par pod (mysql-0.mysql-service.travelo.svc.cluster.local)
+  # → Requis pour le bon fonctionnement du StatefulSet
+  clusterIP: None
+  
+  # Port exposé en interne dans le cluster
+  ports:
+    - name: mysql
+      port: 3306         # Port stable du Service (jamais changé)
+      targetPort: 3306   # Port du conteneur dans le pod
+      protocol: TCP
+  
+  # Sélecteur: le Service trouve les pods via leurs labels
+  # CRITIQUE: ces labels DOIVENT matcher ceux du StatefulSet
+  selector:
+    app: travelo
+    component: database
