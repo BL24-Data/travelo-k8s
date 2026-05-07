@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: travelo
+  labels:
+    app: travelo
+    component: backend
+spec:
+  # ClusterIP par défaut (auto-attribué)
+  # → IP virtuelle unique avec load balancing round-robin
+  # → Accessible uniquement depuis l'intérieur du cluster
+  type: ClusterIP
+  
+  # Port mapping
+  ports:
+    - name: http
+      port: 8080         # Port stable du Service (utilisé par les autres pods)
+      targetPort: 8080   # Port du conteneur Spring Boot
+      protocol: TCP
+  
+  # Sélecteur: le Service trouve les pods backend via leurs labels
+  selector:
+    app: travelo
+    component: backend

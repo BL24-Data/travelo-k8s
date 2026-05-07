@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: travelo
+  labels:
+    app: travelo
+    component: backend
+spec:
+  replicas: 2
+  
+  selector:
+    matchLabels:
+      app: travelo
+      component: backend
+  
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  
+  template:
+    metadata:
+      labels:
+        app: travelo
+        component: backend
+    spec:
+      terminationGracePeriodSeconds: 30
+      
+      containers:
+        - name: backend
+          image: malak8345/travelo-backend:1.0
+          imagePullPolicy: IfNotPresent
+          
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          
+          # Injection en bloc des variables ConfigMap + Secret
+          # Spring Boot mappe automatiquement SPRING_DATASOURCE_* aux propriétés
+          envFrom:
+            - configMapRef:
+                name: travelo-config
+            - secretRef:
+                name: travelo-secret
+          
+          # Resources (exigé par le sujet, point C.1)
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          
+          # ─────────────────────────────────────────────────────────────
+          # SONDES DE SANTÉ (exigées par le sujet, point C.2)
+          # 
+          # Stratégie TCP: vérifie que le port 8080 répond, sans dépendre
+          # d'un endpoint HTTP spécifique (l'image fournie n'expose pas
+          # /actuator/health côté web malgré la présence d'Actuator).
+          # 
+          # Cette approche est canonique en Kubernetes lorsqu'aucun
+          # endpoint health applicatif n'est disponible.
+          # ─────────────────────────────────────────────────────────────
+          
+          # Sonde de démarrage: protège pendant le boot Spring (~16s mesuré)
+          # Vérifie que Tomcat a ouvert le port 8080
+          startupProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 15      # Attend 15s avant le premier check
+            periodSeconds: 5             # Re-check toutes les 5s
+            timeoutSeconds: 3
+            failureThreshold: 24         # 24 × 5s = 2 min max pour démarrer
+          
+          # Sonde de vivacité: vérifie que Tomcat écoute toujours
+          # S'active après succès de la startup probe
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          # Sonde de readiness: vérifie que le pod peut servir du trafic
+          # Si Spring perd la connexion DB et plante son port → retiré du Service
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
