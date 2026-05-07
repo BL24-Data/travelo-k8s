@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: travelo
+  labels:
+    app: travelo
+    component: frontend
+spec:
+  # 2 réplicas comme exigé par le sujet (point B.4)
+  replicas: 2
+  
+  selector:
+    matchLabels:
+      app: travelo
+      component: frontend
+  
+  # Stratégie de mise à jour: RollingUpdate (zéro downtime)
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  
+  template:
+    metadata:
+      labels:
+        app: travelo
+        component: frontend
+    spec:
+      # Délai pour shutdown gracieux (nginx ferme proprement les connexions)
+      terminationGracePeriodSeconds: 15
+      
+      containers:
+        - name: frontend
+          image: malak8345/travelo-frontend:2.0
+          imagePullPolicy: IfNotPresent
+          
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          
+          # Limites de ressources (exigé par le sujet, point C.1)
+          # Frontend ultra léger: nginx + bundle React (~25 MB)
+          resources:
+            requests:
+              cpu: "50m"        # 0.05 CPU minimum (très léger)
+              memory: "64Mi"    # 64 MB minimum
+            limits:
+              cpu: "200m"       # 0.2 CPU maximum
+              memory: "128Mi"   # 128 MB maximum
+          
+          # ─────────────────────────────────────────────────────────────
+          # SONDES DE SANTÉ (exigées par le sujet, point C.2)
+          # 
+          # Nginx démarre en ~2-3 secondes et répond immédiatement sur /.
+          # On peut donc utiliser des HTTP probes simples sur la racine.
+          # ─────────────────────────────────────────────────────────────
+          
+          # Sonde de démarrage: protège pendant le boot nginx
+          startupProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3       # Très rapide à démarrer
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 10         # 10 × 3s = 30s max
+          
+          # Sonde de vivacité: vérifie que nginx répond
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+          
+          # Sonde de readiness: vérifie que le pod peut servir
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3

@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: travelo
+  labels:
+    app: travelo
+    component: frontend
+spec:
+  # ClusterIP = exposition interne uniquement
+  # L'accès externe se fera via l'Ingress (étape 8)
+  type: ClusterIP
+  
+  ports:
+    - name: http
+      port: 80           # Port stable du Service
+      targetPort: 80     # Port nginx dans le conteneur
+      protocol: TCP
+  
+  # Sélecteur: trouve les pods frontend via leurs labels
+  selector:
+    app: travelo
+    component: frontend
