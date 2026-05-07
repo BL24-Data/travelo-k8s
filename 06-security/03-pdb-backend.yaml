@@ -1,0 +1,20 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: backend-pdb
+  namespace: travelo
+  labels:
+    app: travelo
+    component: backend
+spec:
+  # Garantit qu'au moins 1 pod backend reste disponible
+  # lors des disruptions volontaires (drain, rollout, scale-down)
+  # Avec 2 réplicas, ça permet de tuer 1 pod max à la fois
+  minAvailable: 1
+  
+  # Sélecteur: identifie les pods couverts par ce PDB
+  # Doit matcher les labels du Deployment backend
+  selector:
+    matchLabels:
+      app: travelo
+      component: backend
