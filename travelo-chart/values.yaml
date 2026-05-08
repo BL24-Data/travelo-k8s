@@ -112,11 +112,11 @@ ingress:
   enabled: true
   className: nginx
   hosts:
-    - host: travelo.local
+    - host: travelo-helm.local
       service: frontend
-    - host: frontend.travelo.local
+    - host: frontend-helm.travelo.local
       service: frontend
-    - host: backend.exam.local
+    - host: backend-helm.exam.local
       service: backend
 
 # ─────────────────────────────────────────────────────────────────
