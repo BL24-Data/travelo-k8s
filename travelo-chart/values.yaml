@@ -1,0 +1,145 @@
+# ═══════════════════════════════════════════════════════════════════
+# TRAVELO HELM CHART — Variables de configuration
+# ═══════════════════════════════════════════════════════════════════
+# Modifier ce fichier pour adapter le déploiement à votre environnement
+# Override en ligne de commande: --set backend.replicas=4
+
+# ─────────────────────────────────────────────────────────────────
+# Configuration globale
+# ─────────────────────────────────────────────────────────────────
+global:
+  namespace: travelo-helm
+  environment: production
+  
+# ─────────────────────────────────────────────────────────────────
+# MySQL Database (StatefulSet)
+# ─────────────────────────────────────────────────────────────────
+mysql:
+  enabled: true
+  image:
+    repository: mysql
+    tag: "8.0"
+    pullPolicy: IfNotPresent
+  
+  # Stockage persistant
+  storage:
+    size: 2Gi
+    storageClassName: standard
+  
+  # Resources
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+  
+  # Service
+  service:
+    name: mysql-service
+    port: 3306
+
+# ─────────────────────────────────────────────────────────────────
+# Backend Spring Boot (Deployment)
+# ─────────────────────────────────────────────────────────────────
+backend:
+  enabled: true
+  replicas: 2
+  image:
+    repository: malak8345/travelo-backend
+    tag: "1.0"
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+  
+  service:
+    name: backend-service
+    type: ClusterIP
+    port: 8080
+
+# ─────────────────────────────────────────────────────────────────
+# Frontend React/Nginx (Deployment)
+# ─────────────────────────────────────────────────────────────────
+frontend:
+  enabled: true
+  replicas: 2
+  image:
+    repository: malak8345/travelo-frontend
+    tag: "2.0"
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "200m"
+      memory: "128Mi"
+  
+  service:
+    name: frontend-service
+    type: ClusterIP
+    port: 80
+
+# ─────────────────────────────────────────────────────────────────
+# Configuration de l'application (ConfigMap)
+# ─────────────────────────────────────────────────────────────────
+config:
+  database: travelo_db
+  springProfile: production
+  springDatasourceUrl: "jdbc:mysql://mysql-service:3306/travelo_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+
+# ─────────────────────────────────────────────────────────────────
+# Credentials (Secret) — base64 encoded
+# Pour encoder: [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("root"))
+# ─────────────────────────────────────────────────────────────────
+secrets:
+  mysqlRootPassword: "cm9vdA=="            # = "root" en base64
+  springDatasourceUsername: "cm9vdA=="     # = "root"
+  springDatasourcePassword: "cm9vdA=="     # = "root"
+
+# ─────────────────────────────────────────────────────────────────
+# Ingress
+# ─────────────────────────────────────────────────────────────────
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: travelo.local
+      service: frontend
+    - host: frontend.travelo.local
+      service: frontend
+    - host: backend.exam.local
+      service: backend
+
+# ─────────────────────────────────────────────────────────────────
+# Sécurité & Résilience
+# ─────────────────────────────────────────────────────────────────
+security:
+  resourceQuota:
+    enabled: true
+    pods: "10"
+    requestsCpu: "2"
+    requestsMemory: "4Gi"
+    limitsCpu: "6"
+    limitsMemory: "8Gi"
+    pvc: "3"
+  
+  limitRange:
+    enabled: true
+  
+  podDisruptionBudget:
+    enabled: true
+    backendMinAvailable: 1
+    frontendMinAvailable: 1
+  
+  rbac:
+    enabled: true
+    serviceAccountName: travelo-readonly

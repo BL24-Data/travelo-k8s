@@ -1,0 +1,31 @@
+apiVersion: v2
+name: travelo-chart
+description: A Helm chart for Travelo flight booking application (3-tier architecture)
+
+# Type de chart
+# - 'application': pour déployer une app
+# - 'library': pour partager des helpers entre charts
+type: application
+
+# Version du Chart lui-même (semver)
+# À incrémenter à chaque modification de la structure du Chart
+version: 1.0.0
+
+# Version de l'application déployée (la version de l'app Travelo)
+appVersion: "1.0.0"
+
+# Métadonnées
+keywords:
+  - travelo
+  - flight-booking
+  - 3-tier
+  - kubernetes
+
+home: https://github.com/BL24-Data/travelo-k8s
+sources:
+  - https://github.com/BL24-Data/travelo-k8s
+  - https://github.com/Malak8888/travelo-devops
+
+maintainers:
+  - name: Boutaina
+    

@@ -1,0 +1,35 @@
+{{- if .Values.security.podDisruptionBudget.enabled }}
+{{- if .Values.backend.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: backend-pdb
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "travelo.labels" . | nindent 4 }}
+    component: backend
+spec:
+  minAvailable: {{ .Values.security.podDisruptionBudget.backendMinAvailable }}
+  selector:
+    matchLabels:
+      app: travelo
+      component: backend
+{{- end }}
+---
+{{- if .Values.frontend.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: frontend-pdb
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "travelo.labels" . | nindent 4 }}
+    component: frontend
+spec:
+  minAvailable: {{ .Values.security.podDisruptionBudget.frontendMinAvailable }}
+  selector:
+    matchLabels:
+      app: travelo
+      component: frontend
+{{- end }}
+{{- end }}

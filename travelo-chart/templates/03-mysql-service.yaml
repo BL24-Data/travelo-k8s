@@ -1,0 +1,20 @@
+{{- if .Values.mysql.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.mysql.service.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "travelo.labels" . | nindent 4 }}
+    component: database
+spec:
+  clusterIP: None
+  ports:
+    - name: mysql
+      port: {{ .Values.mysql.service.port }}
+      targetPort: {{ .Values.mysql.service.port }}
+      protocol: TCP
+  selector:
+    app: travelo
+    component: database
+{{- end }}
