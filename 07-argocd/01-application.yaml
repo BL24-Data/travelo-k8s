@@ -1,0 +1,61 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: travelo-argocd
+  namespace: argocd
+  labels:
+    app: travelo
+spec:
+  # Project ArgoCD: default = projet par défaut
+  project: default
+  
+  # ─────────────────────────────────────────────────────────────
+  # SOURCE: où sont les manifestes (Git)
+  # ─────────────────────────────────────────────────────────────
+  source:
+    repoURL: https://github.com/BL24-Data/travelo-k8s
+    targetRevision: HEAD
+    path: travelo-chart
+    
+    # Configuration Helm (override des values pour éviter conflit Ingress)
+    helm:
+      releaseName: travelo
+      values: |
+        global:
+          namespace: travelo-argocd
+        ingress:
+          hosts:
+            - host: travelo-argocd.local
+              service: frontend
+            - host: frontend-argocd.travelo.local
+              service: frontend
+            - host: backend-argocd.exam.local
+              service: backend
+  
+  # ─────────────────────────────────────────────────────────────
+  # DESTINATION: où déployer (cluster)
+  # ─────────────────────────────────────────────────────────────
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: travelo-argocd
+  
+  # ─────────────────────────────────────────────────────────────
+  # SYNC POLICY: synchronisation automatique
+  # ─────────────────────────────────────────────────────────────
+  syncPolicy:
+    automated:
+      prune: true                     # Supprime les ressources retirées de Git
+      selfHeal: true                  # Restaure l'état Git si modifications manuelles
+      allowEmpty: false               # Refuse de sync vers un Chart vide
+    
+    syncOptions:
+      - CreateNamespace=true          # Crée le namespace travelo-argocd
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
